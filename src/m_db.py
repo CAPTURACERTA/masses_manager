@@ -2,9 +2,9 @@ import sqlite3
 from typing import Literal
 
 
-class MassesDatabase:
-    def __init__(self, path: str):
-        self.path = path
+class MemoryMassesDatabase:
+    def __init__(self):
+        self.conn = sqlite3.connect(":memory:")
 
         self.schema = {
             # products and clients
@@ -64,22 +64,17 @@ class MassesDatabase:
                 "FOREIGN KEY(id_produto) REFERENCES produtos(id_produto)",
             ],
         }
-        self._create_db_structure()
+        self._create_db()
 
     # INIT ↑
 
-    def get_connection(self):
-        """Retorna uma nova conexão de arquivo, ativando FK e Row Factory."""
-        conn = sqlite3.connect(self.path)
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.row_factory = sqlite3.Row
-        return conn
-    
-    def _create_db_structure(self):
-        """Cria as tabelas se não existirem."""
-        with self.get_connection() as conn:
+    def _create_db(self):
+        with self.conn:
+            self.conn.execute("PRAGMA foreign_keys = ON")
+            self.conn.row_factory = sqlite3.Row
+
             for table, columns in self.schema.items():
-                conn.execute(
+                self.conn.execute(
                     f"CREATE TABLE IF NOT EXISTS {table} ({','.join(columns)})"
                 )
 
@@ -97,7 +92,6 @@ class MassesDatabase:
         min_stock: int,
         current_stock: int = 0,
     ):
-        """Add a product and return its id"""
         db_cursor.execute(
             """
             INSERT INTO produtos (
@@ -129,7 +123,6 @@ class MassesDatabase:
         return db_cursor.lastrowid
 
     def add_client(self, db_cursor: sqlite3.Cursor, name: str, contact: str = None):
-        """Add client and return its id"""
         db_cursor.execute(
             """
             INSERT INTO clientes (nome, contato)
@@ -149,7 +142,6 @@ class MassesDatabase:
         total_value: float,
         open_value: float,
     ):
-        """Register a transaction and return its id"""
         db_cursor.execute(
             """
             INSERT INTO transacoes
@@ -189,7 +181,6 @@ class MassesDatabase:
         product_amount: int,
         product_unit_value: float,
     ):
-        """Register a transaction item and return its id"""
         db_cursor.execute(
             """
             INSERT INTO itens_transacao
@@ -222,7 +213,6 @@ class MassesDatabase:
         date: str,
         value: float,
     ):
-        """Register a payment and return its id"""
         db_cursor.execute(
             """
             INSERT INTO pagamentos
@@ -252,7 +242,6 @@ class MassesDatabase:
         date: str,
         amount: int,
     ):
-        """Register a production and return its id"""
         db_cursor.execute(
             """
             INSERT INTO producoes
@@ -439,31 +428,31 @@ class MassesDatabase:
     # --- ↓ GET_METHODS ↓ --- #
 
     def get_all_products(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+        with self.conn:
+            cursor = self.conn.cursor()
             cursor.execute("SELECT * FROM produtos")
             return cursor.fetchall()
         
     def get_all_clients(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+        with self.conn:
+            cursor = self.conn.cursor()
             cursor.execute("SELECT * FROM clientes")
             return cursor.fetchall()
         
     def get_all_transactions(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+        with self.conn:
+            cursor = self.conn.cursor()
             cursor.execute("SELECT * FROM transacoes")
             return cursor.fetchall()
         
     def get_all_transaction_items(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+        with self.conn:
+            cursor = self.conn.cursor()
             cursor.execute("SELECT * FROM itens_transacao")
             return cursor.fetchall()
         
     def get_all_payments(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
+        with self.conn:
+            cursor = self.conn.cursor()
             cursor.execute("SELECT * FROM pagamentos")
             return cursor.fetchall()
