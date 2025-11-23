@@ -1,5 +1,7 @@
 from database import MassesDatabase
+from db_manager import DbManager
 import random
+import datetime
 
 
 m_db = MassesDatabase()
@@ -27,5 +29,5 @@ for p_name, p_type in products:
             random.randint(10,20),
         )
 
-for item in m_db.get_all_products():
-        print(tuple(item))
+mdbm = DbManager(m_db)
+print([tuple(item) for item in m_db.get_by_text(cursor, 'produtos', 'empadão')])

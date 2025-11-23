@@ -467,26 +467,27 @@ class MassesDatabase:
         )
         return cursor.fetchone()
 
-    def get_product_by_name(self, cursor: sqlite3.Cursor, name: str,):
-        """Searchs a product based on its name or type\n
-        Returns a near result to the input (\%name\%)"""
-        name = f"%{name}%"
-        cursor.execute(
-            """
-            SELECT * FROM produtos
-            WHERE nome LIKE :name OR tipo LIKE :name
-            """, {"name": name}
-        )
-        return cursor.fetchall()
+    def get_by_text(
+        self, 
+        cursor: sqlite3.Cursor, 
+        table: Literal["produtos", "clientes"], 
+        term: str
+    ):
+        """Returns a near result to the input (\%term\%)"""
 
-    def get_client_by_name(self, cursor: sqlite3.Cursor, name: str):
-        """Returns a near result to the input (\%name\%)"""
-        name = f"%{name}%"
+        term = f"%{term}%"
+        
+        if table == "produtos":
+            where_clause = "WHERE nome LIKE :term OR tipo LIKE :term"
+        elif table == 'clientes':
+            where_clause = "WHERE nome LIKE :term"
+
         cursor.execute(
-            """
-            SELECT * FROM clientes
-            WHERE nome LIKE :name
-            """, {"name": name}
+            f"""
+            SELECT * FROM {table}
+            {where_clause}
+            """, 
+            {"term": term}
         )
         return cursor.fetchall()
 
