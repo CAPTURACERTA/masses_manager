@@ -3,8 +3,8 @@ from typing import Literal
 
 
 class MassesDatabase:
-    def __init__(self, path: str):
-        self.path = path
+    def __init__(self, path: str = None):
+        self.path = (path or ":memory:")
 
         self.schema = {
             # products and clients
@@ -64,24 +64,29 @@ class MassesDatabase:
                 "FOREIGN KEY(id_produto) REFERENCES produtos(id_produto)",
             ],
         }
+        
+        self.memory_conn = None
         self._create_db_structure()
 
     # INIT ↑
 
     def get_connection(self):
-        """Retorna uma nova conexão de arquivo, ativando FK e Row Factory."""
-        conn = sqlite3.connect(self.path)
+        """Return a connection to the db activating FK and Row Factory."""
+        conn = self.memory_conn if self.memory_conn else sqlite3.connect(self.path)
         conn.execute("PRAGMA foreign_keys = ON")
         conn.row_factory = sqlite3.Row
         return conn
     
-    def _create_db_structure(self):
-        """Cria as tabelas se não existirem."""
-        with self.get_connection() as conn:
-            for table, columns in self.schema.items():
+    def _create_db_structure(self): 
+        conn = self.get_connection()
+        for table, columns in self.schema.items():
                 conn.execute(
                     f"CREATE TABLE IF NOT EXISTS {table} ({','.join(columns)})"
                 )
+        conn.commit()
+
+        if self.path == ':memory:': self.memory_conn = conn
+        else: conn.close()
 
     # --- ↑ CREATE ↑ --- #
     # --- ↓ DB MANIPULATION METHODS ↓ --- #
@@ -437,6 +442,55 @@ class MassesDatabase:
 
     # --- ↑ UPDATE ↑ --- #
     # --- ↓ GET_METHODS ↓ --- #
+
+    def get_by_id(
+        self,
+        cursor: sqlite3.Cursor,
+        table: Literal["produtos", "clientes", "transacoes",
+                       "itens_transacao", "pagamentos", "producoes"],
+        row_id: int
+    ):
+        id_names = {
+            "produtos": "id_produto",
+            "clientes": "id_cliente",
+            "transacoes": "id_transacao",
+            "itens_transacao": "id_item",
+            "pagamentos": "id_pagamento",
+            "producoes": "id_producao",
+        }
+
+        cursor.execute(
+            f"""
+            SELECT * FROM {table}
+            WHERE {id_names[table]} = :row_id
+            """,{"row_id": row_id}
+        )
+        return cursor.fetchone()
+
+    def get_product_by_name(self, cursor: sqlite3.Cursor, name: str,):
+        """Searchs a product based on its name or type\n
+        Returns a near result to the input (\%name\%)"""
+        name = f"%{name}%"
+        cursor.execute(
+            """
+            SELECT * FROM produtos
+            WHERE nome LIKE :name OR tipo LIKE :name
+            """, {"name": name}
+        )
+        return cursor.fetchall()
+
+    def get_client_by_name(self, cursor: sqlite3.Cursor, name: str):
+        """Returns a near result to the input (\%name\%)"""
+        name = f"%{name}%"
+        cursor.execute(
+            """
+            SELECT * FROM clientes
+            WHERE nome LIKE :name
+            """, {"name": name}
+        )
+        return cursor.fetchall()
+
+    # --- ↓ GET_ALL_... ↓ --- #
 
     def get_all_products(self):
         with self.get_connection() as conn:

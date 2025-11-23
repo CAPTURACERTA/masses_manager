@@ -1,0 +1,12 @@
+{
+    // Configuração para o Pylance/Pyright (mecanismo de análise de código e autocompletar)
+    "python.analysis.extraPaths": [
+        "./src"
+    ],
+    // Se você usa o 'pytest', isso ajuda a encontrá-lo
+    "python.testing.pytestArgs": [
+        "src"
+    ],
+    // Garante que o VS Code use o Python dentro do seu ambiente virtual (.venv)
+    "python.defaultInterpreterPath": ".venv/Scripts/python.exe" 
+}
