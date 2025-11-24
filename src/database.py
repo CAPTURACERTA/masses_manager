@@ -491,6 +491,11 @@ class MassesDatabase:
         )
         return cursor.fetchall()
 
+    def get_product_current_stock(self, cursor: sqlite3.Cursor, product_id: int) -> int:
+        product = self.get_by_id(cursor, "produtos", product_id)
+        
+        return product["estoque_atual"]
+
     # --- ↓ GET_ALL_... ↓ --- #
 
     def get_all_products(self):

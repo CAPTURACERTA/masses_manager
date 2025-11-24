@@ -1,12 +1,12 @@
 from database import MassesDatabase
 from db_manager import DbManager
+from table_classes import Item
 import random
 import datetime
 
-
-m_db = MassesDatabase()
-conn = m_db.get_connection()
-cursor = conn.cursor()
+random.seed(1)
+memory_db = MassesDatabase()
+db_manager = DbManager(memory_db)
 
 products = [
     ('pizza calabresa', 'pizza'),
@@ -19,15 +19,12 @@ products = [
 
 clients = ['marcos viagra', 'antonio cerraria', 'antonioato', 'migalha viagra']
 
-for p_name, p_type in products:
-        m_db.add_product(
-            cursor,
-            p_name,
-            p_type,
-            round(random.randint(0,10) + random.random(), 2),
-            round(random.randint(4,15) + random.random(), 2),
-            random.randint(10,20),
-        )
+db_manager.add_product(
+    "pizza calabresa",
+    "pizza",
+    1.5,
+    3.5,
+    10,
+    12
+)
 
-mdbm = DbManager(m_db)
-print([tuple(item) for item in m_db.get_by_text(cursor, 'produtos', 'empadão')])
