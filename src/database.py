@@ -348,7 +348,8 @@ class MassesDatabase:
                 tipo = :t_type,
                 estado = :status,
                 valor_total = :total_value,
-                valor_aberto = :open_value  
+                valor_aberto = :open_value,
+                atualizado_em = datetime('now')
             WHERE id_transacao = :transaction_id
             """,
             {
@@ -378,7 +379,8 @@ class MassesDatabase:
                 id_transacao = :transaction_id,
                 id_produto = :product_id,
                 quantidade = :product_amount,
-                valor_unitario = :product_unit_value
+                valor_unitario = :product_unit_value,
+                atualizado_em = datetime('now')
             WHERE id_item = :transaction_item_id
             """,
             {
@@ -404,7 +406,8 @@ class MassesDatabase:
             SET
                 id_transacao = :transaction_id,
                 data = :date,
-                valor = :value
+                valor = :value,
+                atualizado_em = datetime('now')
             WHERE id_pagamento = :payment_id
             """,
             {
@@ -491,10 +494,16 @@ class MassesDatabase:
         )
         return cursor.fetchall()
 
-    def get_product_current_stock(self, cursor: sqlite3.Cursor, product_id: int) -> int:
+    def get_product_info(
+            self,
+            cursor: sqlite3.Cursor,
+            product_id: int,
+            column: Literal["nome", "tipo", "preco_producao",
+                            "preco_venda", "estoque_min", "estoque_atual"]
+    ) -> int | float | str:
         product = self.get_by_id(cursor, "produtos", product_id)
         
-        return product["estoque_atual"]
+        return product[column]
 
     # --- ↓ GET_ALL_... ↓ --- #
 
