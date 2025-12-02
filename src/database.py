@@ -22,6 +22,7 @@ class MassesDatabase:
                 "nome TEXT NOT NULL",
                 "contato TEXT",
             ],
+
             # transactions related
             "transacoes": [
                 "id_transacao INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -35,6 +36,7 @@ class MassesDatabase:
                 "atualizado_em DEFAULT (datetime('now'))",
                 "FOREIGN KEY(id_cliente) REFERENCES clientes(id_cliente)",
             ],
+            
             "itens_transacao": [
                 "id_item INTEGER PRIMARY KEY AUTOINCREMENT",
                 "id_transacao INTEGER NOT NULL",
@@ -46,6 +48,7 @@ class MassesDatabase:
                 "FOREIGN KEY(id_transacao) REFERENCES transacoes(id_transacao)",
                 "FOREIGN KEY(id_produto) REFERENCES produtos(id_produto)",
             ],
+
             "pagamentos": [
                 "id_pagamento INTEGER PRIMARY KEY AUTOINCREMENT",
                 "id_transacao INTEGER NOT NULL",
@@ -55,7 +58,8 @@ class MassesDatabase:
                 "atualizado_em DEFAULT (datetime('now'))",
                 "FOREIGN KEY(id_transacao) REFERENCES transacoes(id_transacao)",
             ],
-            # irrelevante por agora, mas já deixando aqui
+
+            # other
             "producoes": [
                 "id_producao INTEGER PRIMARY KEY AUTOINCREMENT",
                 "id_produto INTEGER NOT NULL",
@@ -88,9 +92,9 @@ class MassesDatabase:
         if self.path == ':memory:': self.memory_conn = conn
         else: conn.close()
 
-    # --- ↑ CREATE ↑ --- #
-    # --- ↓ DB MANIPULATION METHODS ↓ --- #
-    # --- ↓ ADD/REGISTER ↓ --- #
+    # --- ↑ CREATE ↑ ---
+    # --- ↓ DB MANIPULATION METHODS ↓ ---
+    # --- ↓ ADD/REGISTER ↓ ---
 
     def add_product(
         self,
@@ -276,8 +280,8 @@ class MassesDatabase:
         )
         return db_cursor.lastrowid
     
-    # --- ↑ ADD/REGISTER ↑ --- #
-    # --- ↓ UPDATE ↓ --- #
+    # --- ↑ ADD/REGISTER ↑ ---
+    # --- ↓ UPDATE ↓ ---
  
     def update_product(
         self,
@@ -443,8 +447,8 @@ class MassesDatabase:
             }
         )
 
-    # --- ↑ UPDATE ↑ --- #
-    # --- ↓ GET_METHODS ↓ --- #
+    # --- ↑ UPDATE ↑ ---
+    # --- ↓ GET_METHODS ↓ ---
 
     def get_by_id(
         self,
@@ -452,7 +456,7 @@ class MassesDatabase:
         table: Literal["produtos", "clientes", "transacoes",
                        "itens_transacao", "pagamentos", "producoes"],
         row_id: int
-    ):
+    ) -> sqlite3.Row | None:
         id_names = {
             "produtos": "id_produto",
             "clientes": "id_cliente",
@@ -475,8 +479,9 @@ class MassesDatabase:
         cursor: sqlite3.Cursor, 
         table: Literal["produtos", "clientes"], 
         term: str
-    ):
-        """Returns a near result to the input (\%term\%)"""
+    ) -> list[sqlite3.Row | None]:
+        """Returns a near result to the input.\n
+        WHERE ... LIKE \%term\%"""
 
         term = f"%{term}%"
         
@@ -505,34 +510,17 @@ class MassesDatabase:
         
         return product[column]
 
-    # --- ↓ GET_ALL_... ↓ --- #
-
-    def get_all_products(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM produtos")
-            return cursor.fetchall()
-        
-    def get_all_clients(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM clientes")
-            return cursor.fetchall()
-        
-    def get_all_transactions(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM transacoes")
-            return cursor.fetchall()
-        
-    def get_all_transaction_items(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM itens_transacao")
-            return cursor.fetchall()
-        
-    def get_all_payments(self):
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM pagamentos")
-            return cursor.fetchall()
+    def get_by_table(
+        self,
+        db_cursor: sqlite3.Cursor,
+        table: Literal[
+            "produtos","clientes","transacoes",
+            "itens_transacao","pagamentos","producoes",
+        ]
+    ) -> list[sqlite3.Row | None]:
+        db_cursor.execute(
+            f"""
+            SELECT * FROM {table}
+            """
+        )
+        return db_cursor.fetchall()

@@ -141,23 +141,32 @@ class DbManager:
     # ↑ UPDATERS ↑ #
     # ↓ GETTERS  ↓ #
 
-    def get_product(self, product_ref: str | int,):
-        """Looking by id --> one result
-        \nLooking by a term --> a list"""
+    def get_by_id(
+        self,
+        row_id: int,
+        table: Literal["produtos", "clientes", "transacoes",
+                       "itens_transacao", "pagamentos", "producoes"],
+    ):
         with self.db.get_connection() as conn:
-            if isinstance(product_ref, int) or product_ref.isnumeric():
-                return self.db.get_by_id(conn.cursor(), "produtos", int(product_ref))
-            else:
-                return self.db.get_by_text(conn.cursor(), "produtos", product_ref)
+            return self.db.get_by_id(conn.cursor(), table, row_id)
+
+    def get_by_text(
+        self,
+        table: Literal["produtos", "clientes"], 
+        term: str,
+    ):
+        with self.db.get_connection() as conn:
+            return self.db.get_by_text(conn.cursor(), table, term)
         
-    def get_client(self, client_ref: str | int):
-        """Looking by id --> one result
-        \nLooking by a term --> a list"""
+    def get_by_table(
+        self,
+        table: Literal[
+            "produtos","clientes","transacoes",
+            "itens_transacao","pagamentos","producoes",
+        ]
+    ):
         with self.db.get_connection() as conn:
-            if isinstance(client_ref, int) or client_ref.isnumeric():
-                return self.db.get_by_id(conn.cursor(), "clientes", int(client_ref))
-            else:
-                return self.db.get_by_text(conn.cursor(), "clientes", client_ref)
+            return self.db.get_by_table(conn.cursor(), table)
 
     # ↓ HELPERS ↓ #
 
