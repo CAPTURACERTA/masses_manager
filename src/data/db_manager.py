@@ -1,9 +1,14 @@
-from database import MassesDatabase
-from table_classes import Item
+from data.database import MassesDatabase
 from sqlite3 import Cursor
-from typing import Literal
+from typing import Literal, TypedDict
 import datetime
 
+
+
+class Item(TypedDict):
+    item_id: int
+    item_amount: int
+    unit_value: float
 
 
 class DbManager:

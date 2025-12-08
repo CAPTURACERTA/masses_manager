@@ -1,8 +1,8 @@
-from database import MassesDatabase
-from db_manager import DbManager
+from data.database import MassesDatabase
+from data.db_manager import DbManager
 import random
 import flet as ft
-from app import App
+from ui.interface import UI
 
 
 def main(page: ft.Page):
@@ -29,7 +29,7 @@ def main(page: ft.Page):
         )
 
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.add(App(db_manager))
+    page.add(UI())
 
 
 ft.app(target=main)

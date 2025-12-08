@@ -1,17 +1,19 @@
 import flet as ft
-from db_manager import DbManager
-from product_view import ProducView
+from application.app import App
+from ui.product_view import ProducView
 
 
-class App(ft.Column):
-    def __init__(self, dbm: DbManager):
+class UI(ft.Column):
+    def __init__(self, app: App):
         super().__init__()
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-        self.dbm = dbm
+        self.app = app
 
-        self.product_view = ProducView({})
+        # PRODUCT VIEW
+        self.product_view = ProducView()
 
+        # TABS
         self.tabs = ft.Tabs(
             selected_index=0,
             animation_duration=300,
@@ -24,6 +26,7 @@ class App(ft.Column):
             ]
         )
 
+        # FINAL LAYOUT
         self.controls = [
             ft.Container(
                 content=self.tabs,
@@ -31,12 +34,6 @@ class App(ft.Column):
             )
         ]
 
+
     def start(self,):
-        ...
-
-    
-
-    # VALIDAÇÕES
-
-    def check_product_name(self,):
         ...

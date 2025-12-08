@@ -1,15 +1,21 @@
 import flet as ft
 from typing import TypedDict
+from application.app import App
 
 
-class ProductBorrowedFuncs(TypedDict):
-    ...
 
-class ProducView(ft.Column):
-    def __init__(self, borrowed_funcs: ProductBorrowedFuncs):
+class ProductItem(ft.Container):
+    def __init__(self, id:int, name: str):
         super().__init__()
 
-        self.funcs = borrowed_funcs
+
+
+
+class ProducView(ft.Column):
+    def __init__(self, app: App):
+        super().__init__()
+
+        self.app = app
 
         # SEARCH BAR
         self.search_bar = ft.TextField(
@@ -19,7 +25,7 @@ class ProducView(ft.Column):
             on_change=...
         )
 
-        # LIST VIEW 
+        # SEARCH LIST VIEW 
         self.lv_header = ft.Row(
             [
                 ft.Text("id", size=16, weight=ft.FontWeight.BOLD),
@@ -38,7 +44,7 @@ class ProducView(ft.Column):
             padding=10
         )
 
-        # ADD 
+        # ADD SECTION 
         self.add_name_bar = ft.TextField(label="nome", expand=True, height=40)
         self.add_type_bar = ft.TextField(label="tipo", expand=True, height=40)
         self.add_production_price_bar = ft.TextField(label="preço produção", expand=True, height=40)
@@ -77,6 +83,46 @@ class ProducView(ft.Column):
             margin=ft.margin.only(top=5)
         )
 
+        # UPDATE SECTION
+        self.update_id_bar = ft.TextField(hint_text="id", disabled=True ,expand=1, height=40)
+        self.update_name_bar = ft.TextField(label="nome", expand=10, height=40)
+        self.update_type_bar = ft.TextField(label="tipo", expand=10, height=40)
+        self.update_production_price_bar = ft.TextField(label="preço produção", expand=True, height=40)
+        self.update_sale_price_bar = ft.TextField(label="preço venda", expand=True, height=40)
+        self.update_min_stock_bar = ft.TextField(label="estoque mínimo", expand=True, height=40)
+        self.update_current_stock_bar = ft.TextField(label="estoque atual", expand=True, height=40)
+        self.update_button = ft.ElevatedButton(
+            "Aualizar",
+            width=300,
+            icon=ft.Icons.REFRESH,
+            color=ft.Colors.WHITE,
+            bgcolor=ft.Colors.BLUE,
+        )
+        self.update_container = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Row(
+                        [self.update_id_bar ,self.update_name_bar, self.update_type_bar,]
+                    ),
+
+                    ft.Row(
+                        [
+                            self.update_production_price_bar,
+                            self.update_sale_price_bar,
+                            self.update_min_stock_bar,
+                            self.update_current_stock_bar,
+                        ]
+                    ),
+
+                    ft.Row(
+                        [self.update_button],
+                        alignment=ft.MainAxisAlignment.CENTER
+                    )
+                ],
+            ),
+            margin=ft.margin.only(top=5)
+        )
+
         # TABS
         self.tabs = ft.Tabs(
             selected_index=0,
@@ -92,7 +138,7 @@ class ProducView(ft.Column):
                     text="Atualizar",
                     icon=ft.Icons.UPDATE,
                     height=50,
-                    content=ft.Text("gugugaga"),
+                    content=self.update_container,
                 )
             ]
         )
@@ -102,7 +148,7 @@ class ProducView(ft.Column):
                 # search bar
                 ft.Container(
                     content=ft.Row([self.search_bar]),
-                    margin=ft.margin.only(top=5),
+                    margin=ft.margin.only(top=10),
                 ),
 
                 # lv container
@@ -126,3 +172,7 @@ class ProducView(ft.Column):
                 # tabs (add,change,...)
                 self.tabs
             ]
+        
+    
+    def update_products_lv(self):
+        ...
