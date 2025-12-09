@@ -163,6 +163,14 @@ class DbManager:
         with self.db.get_connection() as conn:
             return self.db.get_by_text(conn.cursor(), table, term)
         
+    def get_by_name(
+        self,
+        table: Literal["produtos", "clientes"], 
+        name: str,
+    ):
+        with self.db.get_connection() as conn:
+            return self.db.get_by_name(conn.cursor(), table, name)
+
     def get_by_table(
         self,
         table: Literal[

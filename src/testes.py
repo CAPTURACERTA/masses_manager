@@ -1,8 +1,10 @@
 from data.database import MassesDatabase
 from data.db_manager import DbManager
+from ui.interface import UI
+from application.app import App
 import random
 import flet as ft
-from ui.interface import UI
+
 
 
 def main(page: ft.Page):
@@ -11,7 +13,7 @@ def main(page: ft.Page):
     db_manager = DbManager(memory_db)
 
     products = [
-        ('pizza calabresa', 'pizza'),
+        ('pizza calabresa com chocolate branco', 'pizza'),
         ('empadão camarão', 'empadão'),
         ('bolo morango', 'bolo'),
         ('pão doce', 'pão'),
@@ -29,7 +31,10 @@ def main(page: ft.Page):
         )
 
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.add(UI())
+
+    ui = UI(App(db_manager))
+    page.add(ui)
+    ui.start()
 
 
 ft.app(target=main)

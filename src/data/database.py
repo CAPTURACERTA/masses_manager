@@ -499,6 +499,22 @@ class MassesDatabase:
         )
         return cursor.fetchall()
 
+    def get_by_name(
+        self,
+        cursor: sqlite3.Cursor,
+        table: Literal["produtos", "clientes"], 
+        name: str
+    ) -> sqlite3.Row | None:
+        """Get by exact name"""
+        cursor.execute(
+            f"""
+            SELECT * FROM {table}
+            WHERE nome = :name
+            """,
+            {"name": name}
+        )
+        return cursor.fetchone()
+
     def get_product_info(
             self,
             cursor: sqlite3.Cursor,

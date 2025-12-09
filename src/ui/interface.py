@@ -11,7 +11,7 @@ class UI(ft.Column):
         self.app = app
 
         # PRODUCT VIEW
-        self.product_view = ProducView()
+        self.product_view = ProducView(self.app)
 
         # TABS
         self.tabs = ft.Tabs(
@@ -36,4 +36,4 @@ class UI(ft.Column):
 
 
     def start(self,):
-        ...
+        self.product_view.update_lv()
