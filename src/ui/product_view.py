@@ -8,48 +8,50 @@ from typing import Callable, Literal
 class ProductItem(ft.Container):
     def __init__(
         self,
-        p_id:int,
+        p_id: str,
         name: str,
         p_type: str,
-        production_price: float,
-        sale_price: float,
-        min_stock: int,
-        current_stock: int,
+        production_price: str,
+        sale_price: str,
+        min_stock: str,
+        current_stock: str,
         on_click: Callable[[ft.Container], None],
     ):
         super().__init__()
-        self.p_id = p_id
-        self.name = name
-        self.p_type = p_type
-        self.production_price = production_price
-        self.sale_price = sale_price
-        self.min_stock = min_stock
-        self.current_stock = current_stock
+        self.fields_values = {
+            "id":p_id,
+            "name":name,
+            "type":p_type,
+            "production_price":production_price,
+            "sale_price":sale_price,
+            "min_stock":min_stock,
+            "current_stock":current_stock,
+        }
 
         # CONTAINER CONFGS
         self.content=ft.Row(
             [
                 ft.Text(
-                    self.p_id, size=16, weight=ft.FontWeight.BOLD, expand=1,
+                    p_id, size=16, weight=ft.FontWeight.BOLD, expand=1,
                     text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    self.name, size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    name, size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    self.p_type, size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    p_type, size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    f"R$ {self.production_price}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    f"R$ {production_price}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    f"R$ {self.sale_price}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    f"R$ {sale_price}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    self.min_stock, size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    min_stock, size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    self.current_stock, size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    current_stock, size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
             ],
             expand=True
@@ -193,6 +195,7 @@ class ProducView(ft.Column):
             icon=ft.Icons.REFRESH,
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.BLUE,
+            on_click= lambda e: self.update_product()
         )
         self.update_rubber_button = ft.IconButton(
             icon=ft.Icons.CLEAR,
@@ -280,7 +283,7 @@ class ProducView(ft.Column):
             ]
         
     
-    def update_lv(self):
+    def update_lv(self, update = True):
         content = self.app.search_product(self.search_bar.value)
 
         self.lv.controls.clear()
@@ -290,8 +293,8 @@ class ProducView(ft.Column):
                 ProductItem.create(row, self.on_product_click)
             )
 
-        if self.clicked: self.on_product_click(self.clicked)
-        else: self.update()
+        if self.clicked: self.on_product_click(self.clicked, update=False)
+        if update: self.update()
 
     def add_product(self):
         error_messages = self.app.try_add_product(
@@ -303,12 +306,50 @@ class ProducView(ft.Column):
             self.add_fields["current_stock"].value
         )
 
-        for field, msg in error_messages.items():
-            self.add_fields[field].error_text = msg
+        has_errors = False
+        for field_key, msg in error_messages.items():
+            self.add_fields[field_key].error_text = msg if msg else None
+            if msg:
+                has_errors = True
 
-        self.update_lv()
+        if not has_errors:
+            self.clear_fields(self.add_fields ,update=False)
+            self.update_lv(update=False)
+            self.page.snack_bar.content.value = "Produto salvo com sucesso!"
+            self.page.snack_bar.bgcolor = ft.Colors.GREEN
+            self.page.snack_bar.open = True
+            self.page.overlay.append(self.page.snack_bar)
+            
+        self.page.update()
 
-    def on_product_click(self, target: ProductItem):
+    def update_product(self):
+        error_messages = self.app.try_update_product(
+            self.update_fields["id"].value,
+            self.update_fields["name"].value,
+            self.update_fields["type"].value,
+            self.update_fields["production_price"].value,
+            self.update_fields["sale_price"].value,
+            self.update_fields["min_stock"].value,
+            self.update_fields["current_stock"].value
+        )
+
+        has_errors = False
+        for field_key, msg in error_messages.items():
+            self.update_fields[field_key].error_text = msg if msg else None
+            if msg:
+                has_errors = True
+
+        if not has_errors:
+            self.on_product_click(self.clicked, update=False)
+            self.update_lv(update=False)
+            self.page.snack_bar.content.value = "Produto alterado com sucesso!"
+            self.page.snack_bar.bgcolor = ft.Colors.GREEN
+            self.page.snack_bar.open = True
+            self.page.overlay.append(self.page.snack_bar)
+            
+        self.page.update()
+
+    def on_product_click(self, target: ProductItem, update = True):
         if self.clicked: self.clicked.bgcolor = None
         self.clicked = target if self.clicked != target else None
         if self.clicked:
@@ -316,26 +357,25 @@ class ProducView(ft.Column):
             self.tabs.selected_index = 1
 
 
-        self.update_fields["id"].value = target.p_id if self.clicked else ""
-        self.update_fields["name"].value = target.name if self.clicked else ""
-        self.update_fields["type"].value = target.p_type if self.clicked else ""
-        self.update_fields["production_price"].value = target.production_price if self.clicked else ""
-        self.update_fields["sale_price"].value = target.sale_price if self.clicked else ""
-        self.update_fields["min_stock"].value = target.min_stock if self.clicked else ""
-        self.update_fields["current_stock"].value = target.current_stock if self.clicked else ""
+        if self.clicked:
+            for field_key, msg in target.fields_values.items():
+                self.update_fields[field_key].value = msg
+        else:
+            self.clear_fields(self.update_fields, update=False)
 
-        if not self.clicked:
-            for field in self.update_fields.values():
-                field.error_text = ""
+        if update: self.update()
 
-        self.update()
+    def clear_fields(self, fields: dict[str, ft.TextField], update = True):
+        for field in fields.values():
+            field.value = None
+            field.error_text = None
 
-    def clear_add_fields(self):
-        for field in self.add_fields.values():
-            field.value = ""
-            field.error_text = ""
+        if update: self.update()
 
-        self.update()
+    def clear_error_field(self, e: ft.ControlEvent):
+        if e.control.error_text:
+            e.control.error_text = None
+            e.control.update()
 
     # HELPERS
 
@@ -351,5 +391,6 @@ class ProducView(ft.Column):
             hint_text=hint_text,
             expand=expand,
             height=40,
-            disabled=disabled
+            disabled=disabled,
+            on_change=self.clear_error_field
         )

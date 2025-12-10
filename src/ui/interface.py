@@ -20,7 +20,7 @@ class UI(ft.Column):
             tabs=[
                 ft.Tab(
                     text="Produtos",
-                    icon=ft.Icons.INVENTORY_2, 
+                    icon=ft.Icons.INVENTORY_2,
                     content=self.product_view,
                 )
             ]

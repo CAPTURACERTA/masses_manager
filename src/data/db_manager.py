@@ -181,6 +181,17 @@ class DbManager:
         with self.db.get_connection() as conn:
             return self.db.get_by_table(conn.cursor(), table)
 
+    def get_name(
+        self,
+        table: Literal["produtos", "clientes"],
+        row_id: int,
+    ):
+        with self.db.get_connection() as conn:
+            if table == "produtos":
+                return self.db.get_product_info(
+                    conn.cursor(), row_id, "nome"
+                )
+
     # ↓ HELPERS ↓ #
 
     def _get_total_value(self, items: list[Item]):

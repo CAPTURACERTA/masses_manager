@@ -1,10 +1,11 @@
 import sqlite3
 from typing import Literal
+from os import path as Path
 
 
 class MassesDatabase:
     def __init__(self, path: str = None):
-        self.path = (path or ":memory:")
+        self.path = self._get_path(path)
 
         self.schema = {
             # products and clients
@@ -540,3 +541,18 @@ class MassesDatabase:
             """
         )
         return db_cursor.fetchall()
+    
+    # ↓ HELPERS ↓
+
+    @classmethod
+    def _get_path(cls, path: str):
+        if not path: return ":memory:"
+
+        new_path = Path.dirname(Path.dirname(__file__))
+        for s in path.split("\\"):
+            new_path = Path.join(new_path, s)
+
+        if not Path.exists(new_path):
+            raise FileExistsError(f"Caminho não encontrado:{new_path}")
+
+        return new_path

@@ -1,5 +1,12 @@
+import os
+
+
+
 def main():
-    print("Hello from pizza-manager!")
+    p = os.path.dirname(__file__)
+    for s in "..\\database\\masses.db".split("\\"):
+        p = os.path.join(p, s)
+    print(os.path.exists(p))
 
 
 if __name__ == "__main__":
