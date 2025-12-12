@@ -1,12 +1,18 @@
-import os
-
+from data.table_classes import ProductInfo
 
 
 def main():
-    p = os.path.dirname(__file__)
-    for s in "..\\database\\masses.db".split("\\"):
-        p = os.path.join(p, s)
-    print(os.path.exists(p))
+    keys = [
+                "nome", "tipo", "preco_producao",
+                "preco_venda", "estoque_min", "estoque_atual", "ativo",
+                "all"
+            ]
+    info = ProductInfo()
+
+    for i, key in enumerate(keys):
+        info[key] = i
+    
+    print(info)
 
 
 if __name__ == "__main__":

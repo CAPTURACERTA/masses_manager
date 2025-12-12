@@ -1,5 +1,6 @@
 from data.db_manager import DbManager
 from typing import Literal
+from sqlite3 import Row
 
 
 class App:
@@ -91,6 +92,16 @@ class App:
 
         return error_messages
 
+    def get_product_info(
+            self,
+            product_info_or_row: int | Row,
+            column: Literal[
+            "nome", "tipo", "preco_producao", "preco_venda",
+            "estoque_min", "estoque_atual", "ativo", "all"
+        ]
+    ):
+        return self.dbm.get_product_info(product_info_or_row, column)
+
     # VALIDATIONS
 
     def _validate_and_convert_num(
@@ -129,11 +140,12 @@ class App:
         instance_id: int = None,
         can_empty = True
     ):
-        if self.dbm.get_by_name(table, name):
-            if not instance_id or (
-                instance_id and self.dbm.get_name("produtos", instance_id) != name
-            ):
-                return "Nome existente"
+        if existing_product := self.dbm.get_by_name("produtos", name):
+            if table == "produtos": get_func = self.dbm.get_product_info
+            else: ...
+
+            if instance_id and instance_id != get_func(existing_product, "id_produto"):
+                return "Nome existente"      
                 
         elif not can_empty and not name: return "Obrigatório"
         return ""

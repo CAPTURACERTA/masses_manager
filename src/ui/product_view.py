@@ -1,6 +1,6 @@
 import flet as ft
-from sqlite3 import Row
 from application.app import App
+from data.table_classes import ProductInfo
 from typing import Callable, Literal
 
 
@@ -42,10 +42,10 @@ class ProductItem(ft.Container):
                     p_type, size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    f"R$ {production_price}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    f"R$ {float(production_price):.2f}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
-                    f"R$ {sale_price}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
+                    f"R$ {float(sale_price):.2f}", size=16, expand=1, text_align=ft.TextAlign.CENTER,
                 ),
                 ft.Text(
                     min_stock, size=16, expand=1, text_align=ft.TextAlign.CENTER,
@@ -63,10 +63,18 @@ class ProductItem(ft.Container):
 
 
     @classmethod
-    def create(cls, product_row: Row, on_click: Callable[[ft.Container], None]):
-        p_id, name, p_type, production_price, sale_price, min_stock, current_stock = product_row
+    def create(
+        cls, product_info: ProductInfo, on_click: Callable[[ft.Container], None]
+    ):
         return cls(
-            p_id, name, p_type, production_price, sale_price, min_stock, current_stock, on_click
+            product_info["id_produto"],
+            product_info["nome"],
+            product_info["tipo"],
+            product_info["preco_producao"],
+            product_info["preco_venda"],
+            product_info["estoque_min"],
+            product_info["estoque_atual"],
+            on_click,
         )
 
 
@@ -289,8 +297,9 @@ class ProducView(ft.Column):
         self.lv.controls.clear()
 
         for row in content:
+            row_info = self.app.get_product_info(row, "all")
             self.lv.controls.append(
-                ProductItem.create(row, self.on_product_click)
+                ProductItem.create(row_info, self.on_product_click)
             )
 
         if self.clicked: self.on_product_click(self.clicked, update=False)
@@ -353,7 +362,7 @@ class ProducView(ft.Column):
         if self.clicked: self.clicked.bgcolor = None
         self.clicked = target if self.clicked != target else None
         if self.clicked:
-            self.clicked.bgcolor = ft.Colors.RED_200
+            self.clicked.bgcolor = ft.Colors.BLUE_GREY_400
             self.tabs.selected_index = 1
 
 

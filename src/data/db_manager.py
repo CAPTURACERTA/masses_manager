@@ -1,14 +1,9 @@
 from data.database import MassesDatabase
-from sqlite3 import Cursor
-from typing import Literal, TypedDict
+from data.table_classes import Item
+from sqlite3 import Cursor, Row
+from typing import Literal
 import datetime
 
-
-
-class Item(TypedDict):
-    item_id: int
-    item_amount: int
-    unit_value: float
 
 
 class DbManager:
@@ -117,6 +112,7 @@ class DbManager:
         sell_price: float = None,
         min_stock: int = None,
         current_stock: int = None,
+        is_active: int = None,
     ):
         conn = None
         if not db_cursor:
@@ -125,15 +121,17 @@ class DbManager:
 
         try:
             product = self.db.get_by_id(db_cursor, "produtos", product_id)
+            product_info = self.db.get_product_info(db_cursor, product, "all")
             self.db.update_product(
                 db_cursor,
                 product_id,
-                (name or product["nome"]),
-                (p_type or product["tipo"]),
-                production_price if production_price is not None else product["preco_producao"],
-                sell_price if sell_price is not None else product["preco_venda"],
-                min_stock if min_stock is not None else product["estoque_min"],
-                current_stock if current_stock is not None else product["estoque_atual"],
+                (name or product_info["nome"]),
+                (p_type or product_info["tipo"]),
+                production_price if production_price is not None else product_info["preco_producao"],
+                sell_price if sell_price is not None else product_info["preco_venda"],
+                min_stock if min_stock is not None else product_info["estoque_min"],
+                current_stock if current_stock is not None else product_info["estoque_atual"],
+                is_active if is_active is not None else product_info["ativo"],
             )
         except Exception as e:
             if conn: conn.rollback()
@@ -160,6 +158,10 @@ class DbManager:
         table: Literal["produtos", "clientes"], 
         term: str,
     ):
+        """
+        Return rows that are similar or equal to the input
+        \n WHERE LIKE \%input\%
+        """
         with self.db.get_connection() as conn:
             return self.db.get_by_text(conn.cursor(), table, term)
         
@@ -168,6 +170,7 @@ class DbManager:
         table: Literal["produtos", "clientes"], 
         name: str,
     ):
+        """Get by exact name"""
         with self.db.get_connection() as conn:
             return self.db.get_by_name(conn.cursor(), table, name)
 
@@ -181,16 +184,18 @@ class DbManager:
         with self.db.get_connection() as conn:
             return self.db.get_by_table(conn.cursor(), table)
 
-    def get_name(
+    def get_product_info(
         self,
-        table: Literal["produtos", "clientes"],
-        row_id: int,
+        product_id_or_row: int | Row,
+        column: Literal[
+            "id_produto", "nome", "tipo", "preco_producao", "preco_venda",
+            "estoque_min", "estoque_atual", "ativo", "all"
+        ]
     ):
         with self.db.get_connection() as conn:
-            if table == "produtos":
-                return self.db.get_product_info(
-                    conn.cursor(), row_id, "nome"
-                )
+            return self.db.get_product_info(
+                conn.cursor(), product_id_or_row, column
+            )
 
     # ↓ HELPERS ↓ #
 

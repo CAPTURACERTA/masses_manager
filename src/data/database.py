@@ -1,4 +1,5 @@
 import sqlite3
+from data.table_classes import ProductInfo
 from typing import Literal
 from os import path as Path
 
@@ -17,11 +18,13 @@ class MassesDatabase:
                 "preco_venda REAL NOT NULL",
                 "estoque_min INTEGER NOT NULL",
                 "estoque_atual INTEGER NOT NULL",
+                "ativo INTEGER DEFAULT 1 NOT NULL",
             ],
             "clientes": [
                 "id_cliente INTEGER PRIMARY KEY AUTOINCREMENT",
                 "nome TEXT NOT NULL",
                 "contato TEXT",
+                "ativo INTEGER DEFAULT 1 NOT NULL"
             ],
 
             # transactions related
@@ -294,6 +297,7 @@ class MassesDatabase:
         sell_price: float,
         min_stock: int,
         current_stock: int = 0,
+        is_active: int = 1,
     ):
         db_cursor.execute(
             """
@@ -304,7 +308,8 @@ class MassesDatabase:
                 preco_producao = :production_price,
                 preco_venda = :sell_price,
                 estoque_min = :min_stock,
-                estoque_atual = :current_stock
+                estoque_atual = :current_stock,
+                ativo = :is_active
             WHERE id_produto = :product_id
             """, 
             {
@@ -315,21 +320,25 @@ class MassesDatabase:
                 "min_stock": min_stock,
                 "current_stock": current_stock,
                 "product_id": product_id,
+                "is_active": is_active,
             }
         )
 
-    def update_client(self, db_cursor: sqlite3.Cursor,
-                      client_id: int,  name: str, contact: str = None):
+    def update_client(
+            self, db_cursor: sqlite3.Cursor,
+            client_id: int,  name: str, contact: str = None, is_active: int = 1
+    ):
         db_cursor.execute(
             """
             UPDATE clientes
-            SET nome = :name, contato = :contact
+            SET nome = :name, contato = :contact, ativo = :is_active
             WHERE id_cliente = :client_id
             """,
             {
                 "name": name,
                 "contact": contact,
                 "client_id": client_id,
+                "is_active": is_active,
             }
         )
 
@@ -519,13 +528,30 @@ class MassesDatabase:
     def get_product_info(
             self,
             cursor: sqlite3.Cursor,
-            product_id: int,
-            column: Literal["nome", "tipo", "preco_producao",
-                            "preco_venda", "estoque_min", "estoque_atual"]
-    ) -> int | float | str:
-        product = self.get_by_id(cursor, "produtos", product_id)
-        
-        return product[column]
+            product_id_or_row: int | sqlite3.Row,
+            column: Literal[
+                "id_produto", "nome", "tipo", "preco_producao", "preco_venda",
+                "estoque_min", "estoque_atual", "ativo", "all"
+            ]
+    ) -> ProductInfo | int | float | str:
+        if isinstance(product_id_or_row, int):
+            product = self.get_by_id(cursor, "produtos", product_id_or_row)
+        else:
+            product = product_id_or_row
+
+        if column == "all":
+            keys = [
+                "id_produto", "nome", "tipo", "preco_producao",
+                "preco_venda", "estoque_min", "estoque_atual", "ativo",
+            ]
+            info = ProductInfo()
+
+            for key in keys:
+                info[key] = product[key]
+        else: 
+            info = product[column]
+
+        return info
 
     def get_by_table(
         self,
