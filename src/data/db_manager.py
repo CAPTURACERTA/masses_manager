@@ -1,5 +1,5 @@
 from data.database import MassesDatabase
-from data.table_classes import Item
+from data.table_classes import Item, ProductColumns, ClientColumns, DataBaseTables
 from sqlite3 import Cursor, Row
 from typing import Literal
 import datetime
@@ -97,7 +97,9 @@ class DbManager:
 
     def _subtract_product_current_stock(self, db_cursor: Cursor, items: list[Item]):
         for item in items:
-            current_stock = self.db.get_product_info(db_cursor, item["item_id"], "estoque_atual")
+            current_stock = self.db.get_table_row_info(
+                db_cursor, "produtos", item["item_id"], "estoque_atual"
+            )
             new_current_stock = current_stock - item["item_amount"]
 
             self.update_product(item["item_id"], db_cursor, current_stock=new_current_stock)
@@ -105,14 +107,13 @@ class DbManager:
     def update_product(
         self,
         product_id: int,
+        name: str,
+        p_type: str,
+        production_price: float,
+        sale_price: float,
+        min_stock: int,
+        current_stock: int,
         db_cursor: Cursor = None,
-        name: str = None,
-        p_type: str = None,
-        production_price: float = None,
-        sell_price: float = None,
-        min_stock: int = None,
-        current_stock: int = None,
-        is_active: int = None,
     ):
         conn = None
         if not db_cursor:
@@ -120,18 +121,10 @@ class DbManager:
             db_cursor = conn.cursor()
 
         try:
-            product = self.db.get_by_id(db_cursor, "produtos", product_id)
-            product_info = self.db.get_product_info(db_cursor, product, "all")
             self.db.update_product(
-                db_cursor,
-                product_id,
-                (name or product_info["nome"]),
-                (p_type or product_info["tipo"]),
-                production_price if production_price is not None else product_info["preco_producao"],
-                sell_price if sell_price is not None else product_info["preco_venda"],
-                min_stock if min_stock is not None else product_info["estoque_min"],
-                current_stock if current_stock is not None else product_info["estoque_atual"],
-                is_active if is_active is not None else product_info["ativo"],
+                db_cursor, 
+                product_id, name, p_type, 
+                production_price, sale_price, min_stock, current_stock
             )
         except Exception as e:
             if conn: conn.rollback()
@@ -141,6 +134,30 @@ class DbManager:
         finally:
             if conn: conn.close()
         
+    def update_client(
+        self,
+        client_id: int,
+        name: str,
+        contact: str,
+        db_cursor: Cursor=None
+    ):
+        conn = None
+        if not db_cursor:
+            conn = self.db.get_connection()
+            db_cursor = conn.cursor()
+
+        try:
+            self.db.update_client(
+                db_cursor, client_id, name, contact
+            )
+        except Exception as e:
+            if conn: conn.rollback()
+            raise e
+        else:
+            if conn: conn.commit()
+        finally:
+            if conn: conn.close()
+    
     # ↑ UPDATERS ↑ #
     # ↓ GETTERS  ↓ #
 
@@ -176,25 +193,20 @@ class DbManager:
 
     def get_by_table(
         self,
-        table: Literal[
-            "produtos","clientes","transacoes",
-            "itens_transacao","pagamentos","producoes",
-        ]
+        table: DataBaseTables
     ):
         with self.db.get_connection() as conn:
             return self.db.get_by_table(conn.cursor(), table)
 
-    def get_product_info(
+    def get_table_row_info(
         self,
-        product_id_or_row: int | Row,
-        column: Literal[
-            "id_produto", "nome", "tipo", "preco_producao", "preco_venda",
-            "estoque_min", "estoque_atual", "ativo", "all"
-        ]
+        table: DataBaseTables,
+        id_or_row: int | Row,
+        column: ProductColumns | ClientColumns
     ):
         with self.db.get_connection() as conn:
-            return self.db.get_product_info(
-                conn.cursor(), product_id_or_row, column
+            return self.db.get_table_row_info(
+                conn.cursor(), table, id_or_row, column
             )
 
     # ↓ HELPERS ↓ #

@@ -1,5 +1,6 @@
 from data.db_manager import DbManager
-from typing import Literal
+from data.table_classes import ProductColumns, ClientColumns
+from typing import Literal, get_args
 from sqlite3 import Row
 
 
@@ -7,129 +8,156 @@ class App:
     def __init__(self, dbm: DbManager):
         self.dbm = dbm
 
-    # PRODUCT
+    # PRODUCT & CLIENT
 
-    def try_add_product(
-        self,
-        name: str,
-        p_type: str,
-        production_price: str,
-        sale_price: str,
-        min_stock: str,
-        current_stock: str
-    ) -> dict[
-        Literal[
-            "name", "type", "production_price", "sale_price", "min_stock", "current_stock"
-        ], str
-    ]:
+    def try_add_product(self, **data):
         """Returns a dict with errors assigned to each field"""
-        error_messages = {
-            "name": "", "type": "", "production_price": "",
-            "sale_price": "", "min_stock": "", "current_stock": ""
-        }
+        error_messages = {}
+        for arg in get_args(ProductColumns)[1:-1]:
+            error_messages[arg] = ""
 
-        error_messages["name"] = self._validate_name("produtos", name, can_empty=False)
-        error_messages["type"] = "Obrigatório" if not p_type else ""
-        
-        prod_price_val, error_messages["production_price"] = self._validate_and_convert_num(production_price, is_float=True, can_empty=False)
-        sale_price_val, error_messages["sale_price"] = self._validate_and_convert_num(sale_price, is_float=True, can_empty=False)
-        min_stock_val, error_messages["min_stock"] = self._validate_and_convert_num(min_stock, is_float=False, can_empty=False)
-        curr_stock_val, error_messages["current_stock"] = self._validate_and_convert_num(current_stock, is_float=False, can_empty=False)
+        error_messages["nome"] = self._validate_name("produtos", data["nome"])
+        error_messages["tipo"] = "Obrigatório" if not data["tipo"] else ""
 
-        if any(error_messages.values()):
-            return error_messages 
-
-        self.dbm.add_product(
-            name,
-            p_type,
-            prod_price_val, 
-            sale_price_val,
-            min_stock_val,
-            curr_stock_val
+        prod_price_val, error_messages["preco_producao"] = (
+            self._validate_and_convert_num(data["preco_producao"], is_float=True)
+        )
+        sale_price_val, error_messages["preco_venda"] = self._validate_and_convert_num(
+            data["preco_venda"], is_float=True
+        )
+        min_stock_val, error_messages["estoque_min"] = self._validate_and_convert_num(
+            data["estoque_min"], is_float=False
+        )
+        curr_stock_val, error_messages["estoque_atual"] = (
+            self._validate_and_convert_num(data["estoque_atual"], is_float=False)
         )
 
-        return error_messages 
+        if not any(error_messages.values()):
+            self.dbm.add_product(
+                str(data["nome"]),
+                str(data["tipo"]),
+                prod_price_val,
+                sale_price_val,
+                min_stock_val,
+                curr_stock_val,
+            )
 
-    def try_update_product(
-        self,
-        p_id: int,
-        name: str,
-        p_type: str,
-        production_price: str,
-        sale_price: str,
-        min_stock: str,
-        current_stock: str
-    ) -> dict[
-        Literal[
-            "name", "type", "production_price", "sale_price", "min_stock", "current_stock"
-        ], str
-    ]:
+        return error_messages
+
+    def try_update_product(self, **data):
         """Returns a dict with errors assigned to each field"""
-        error_messages = {
-            "name": "", "type": "", "production_price": "",
-            "sale_price": "", "min_stock": "", "current_stock": ""
-        }
+        error_messages = {}
+        for arg in get_args(ProductColumns)[1:-1]:
+            error_messages[arg] = ""
 
-        error_messages["name"] = self._validate_name("produtos", name, instance_id=p_id)
-        
-        prod_price_val, error_messages["production_price"] = self._validate_and_convert_num(production_price, is_float=True)
-        sale_price_val, error_messages["sale_price"] = self._validate_and_convert_num(sale_price, is_float=True)
-        min_stock_val, error_messages["min_stock"] = self._validate_and_convert_num(min_stock, is_float=False)
-        curr_stock_val, error_messages["current_stock"] = self._validate_and_convert_num(current_stock, is_float=False)
-
-        if any(error_messages.values()):
-            return error_messages 
-        
-        self.dbm.update_product(
-            int(p_id),
-            name=name,
-            p_type=p_type,
-            production_price=prod_price_val,
-            sell_price=sale_price_val,
-            min_stock=min_stock_val,
-            current_stock=curr_stock_val
+        error_messages["nome"] = self._validate_name(
+            "produtos", data["nome"], instance_id=data["id_produto"]
         )
+
+        prod_price_val, error_messages["preco_producao"] = (
+            self._validate_and_convert_num(data["preco_producao"], is_float=True)
+        )
+        sale_price_val, error_messages["preco_venda"] = self._validate_and_convert_num(
+            data["preco_venda"], is_float=True
+        )
+        min_stock_val, error_messages["estoque_min"] = self._validate_and_convert_num(
+            data["estoque_min"], is_float=False
+        )
+        curr_stock_val, error_messages["estoque_atual"] = (
+            self._validate_and_convert_num(data["estoque_atual"], is_float=False)
+        )
+
+        if not any(error_messages.values()):
+            self.dbm.update_product(
+                int(data["id_produto"]),
+                str(data["nome"]),
+                str(data["tipo"]),
+                prod_price_val,
+                sale_price_val,
+                min_stock_val,
+                curr_stock_val,
+            )
+
+        return error_messages
+
+    def try_add_client(self, **data):
+        """Returns a dict with errors assigned to each field"""
+        error_messages = {}
+        for arg in get_args(ClientColumns)[1:-1]:
+            error_messages[arg] = ""
+
+        error_messages["nome"] = self._validate_name("clientes", data["nome"])
+
+        if not any(error_messages.values()):
+            self.dbm.add_client(str(data["nome"]), str(data["contato"]))
+
+        return error_messages
+
+    def try_update_client(self, **data):
+        """Returns a dict with errors assigned to each field"""
+        error_messages = {}
+        for arg in get_args(ClientColumns)[1:-1]:
+            error_messages[arg] = ""
+
+        error_messages["nome"] = self._validate_name(
+            "clientes", data["nome"], instance_id=data["id_cliente"]
+        )
+
+        if not any(error_messages.values()):
+            self.dbm.update_client(
+                int(data["id_cliente"]), str(data["nome"]), str(data["contato"])
+            )
 
         return error_messages
 
     def get_product_info(
-            self,
-            product_info_or_row: int | Row,
-            column: Literal[
-            "nome", "tipo", "preco_producao", "preco_venda",
-            "estoque_min", "estoque_atual", "ativo", "all"
-        ]
+        self, product_id_or_row: int | Row, column: ProductColumns = "all"
     ):
-        return self.dbm.get_product_info(product_info_or_row, column)
+        return self.dbm.get_table_row_info("produtos", product_id_or_row, column)
+
+    def get_client_info(
+        self, client_id_or_row: int | Row, column: ClientColumns = "all"
+    ):
+        return self.dbm.get_table_row_info("clientes", client_id_or_row, column)
+
+    # SEARCHS
+
+    def search_product(self, term: str = None):
+        if not term:
+            return self.dbm.get_by_table("produtos")
+        return self.dbm.get_by_text("produtos", term)
+
+    def search_client(self, term: str = None):
+        if not term:
+            return self.dbm.get_by_table("clientes")
+        return self.dbm.get_by_text("clientes", term)
 
     # VALIDATIONS
 
     def _validate_and_convert_num(
-        self, value: str, is_float: bool, can_empty = True
+        self, value: str, is_float: bool
     ) -> tuple[float | int | None, str]:
         """
-        Try to convert and validate the number. 
+        Try to convert and validate the number.
         \nTuple: (Value converted, Error message)
         """
-        if not can_empty and not value:
+        if value == "":
             return None, "Obrigatório"
-        elif can_empty and not value:
-            return None, ""
-        
+
         if isinstance(value, (float, int)):
             return value, ""
 
         try:
             if is_float:
-                num = float(value.replace(",", ".")) 
+                num = float(value.replace(",", "."))
             else:
                 num = int(value)
-            
+
             if num < 0:
                 return None, "Não pode ser negativo"
-                
+
             return num, ""
-            
+
         except ValueError:
             return None, "Deve ser um número válido"
 
@@ -138,20 +166,14 @@ class App:
         table: Literal["produtos", "clientes"],
         name: str,
         instance_id: int = None,
-        can_empty = True
     ):
-        if existing_product := self.dbm.get_by_name("produtos", name):
-            if table == "produtos": get_func = self.dbm.get_product_info
-            else: ...
-
-            if instance_id and instance_id != get_func(existing_product, "id_produto"):
-                return "Nome existente"      
-                
-        elif not can_empty and not name: return "Obrigatório"
+        if existing_row := self.dbm.get_by_name(table, name):
+            if instance_id and instance_id != self.dbm.get_table_row_info(
+                table,
+                existing_row,
+                ("id_produto" if table == "produtos" else "id_cliente"),
+            ):
+                return "Nome existente"
+        elif not name:
+            return "Obrigatório"
         return ""
-
-    # SEARCHS
-
-    def search_product(self, term: str = None):
-        if not term: return self.dbm.get_by_table("produtos")
-        else: return self.dbm.get_by_text("produtos", term)

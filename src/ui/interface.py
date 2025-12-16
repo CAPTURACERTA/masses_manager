@@ -1,6 +1,7 @@
 import flet as ft
 from application.app import App
-from ui.product_view import ProducView
+from ui.product_view import ProductView
+from ui.client_view import ClientView
 
 
 class UI(ft.Column):
@@ -11,7 +12,8 @@ class UI(ft.Column):
         self.app = app
 
         # PRODUCT VIEW
-        self.product_view = ProducView(self.app)
+        self.product_view = ProductView(self.app)
+        self.client_view = ClientView(self.app)
 
         # TABS
         self.tabs = ft.Tabs(
@@ -22,6 +24,11 @@ class UI(ft.Column):
                     text="Produtos",
                     icon=ft.Icons.INVENTORY_2,
                     content=self.product_view,
+                ),
+                ft.Tab(
+                    text="Clientes",
+                    icon=ft.Icons.PEOPLE,
+                    content=self.client_view
                 )
             ]
         )
@@ -36,4 +43,5 @@ class UI(ft.Column):
 
 
     def start(self,):
-        self.product_view.update_lv()
+        self.product_view.update_list_view()
+        self.client_view.update_list_view()

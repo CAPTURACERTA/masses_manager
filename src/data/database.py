@@ -1,6 +1,6 @@
 import sqlite3
-from data.table_classes import ProductInfo
-from typing import Literal
+from data.table_classes import DataBaseTables, ProductInfo, ClientInfo, ProductColumns, ClientColumns
+from typing import Literal, get_args
 from os import path as Path
 
 
@@ -524,42 +524,38 @@ class MassesDatabase:
             {"name": name}
         )
         return cursor.fetchone()
-
-    def get_product_info(
-            self,
-            cursor: sqlite3.Cursor,
-            product_id_or_row: int | sqlite3.Row,
-            column: Literal[
-                "id_produto", "nome", "tipo", "preco_producao", "preco_venda",
-                "estoque_min", "estoque_atual", "ativo", "all"
-            ]
-    ) -> ProductInfo | int | float | str:
-        if isinstance(product_id_or_row, int):
-            product = self.get_by_id(cursor, "produtos", product_id_or_row)
+    
+    def get_table_row_info(
+        self,
+        cursor: sqlite3.Cursor,
+        table: DataBaseTables,
+        id_or_row: int | sqlite3.Row,
+        column: ProductColumns | ClientColumns
+    ) -> dict | int | float | str:
+        if isinstance(id_or_row, int):
+            row = self.get_by_id(cursor, table, id_or_row)
         else:
-            product = product_id_or_row
+            row = id_or_row
 
         if column == "all":
-            keys = [
-                "id_produto", "nome", "tipo", "preco_producao",
-                "preco_venda", "estoque_min", "estoque_atual", "ativo",
-            ]
-            info = ProductInfo()
+            info = {}
 
-            for key in keys:
-                info[key] = product[key]
+            table_columns = {
+                "produtos": ProductColumns,
+                "clientes": ClientColumns
+            }
+
+            for key in get_args(table_columns[table]):
+                info[key] = row[key]
         else: 
-            info = product[column]
+            info = row[column]
 
         return info
 
     def get_by_table(
         self,
         db_cursor: sqlite3.Cursor,
-        table: Literal[
-            "produtos","clientes","transacoes",
-            "itens_transacao","pagamentos","producoes",
-        ]
+        table: DataBaseTables
     ) -> list[sqlite3.Row | None]:
         db_cursor.execute(
             f"""
