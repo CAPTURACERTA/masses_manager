@@ -10,8 +10,9 @@ class UI(ft.Column):
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
         self.app = app
+        self.expand = True
 
-        # PRODUCT VIEW
+        # VIEWS
         self.product_view = ProductView(self.app)
         self.client_view = ClientView(self.app)
 
@@ -37,11 +38,12 @@ class UI(ft.Column):
         self.controls = [
             ft.Container(
                 content=self.tabs,
-                width=1000
+                width=1000,
+                expand=True
             )
         ]
 
 
     def start(self,):
-        self.product_view.update_list_view()
-        self.client_view.update_list_view()
+        self.product_view.update_lv()
+        self.client_view.update_lv()

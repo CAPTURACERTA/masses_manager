@@ -7,12 +7,16 @@ from typing import TypeAlias, Dict, Callable
 FieldDict: TypeAlias = Dict[TableColumn, ft.TextField]
 
 
+class BaseContextMenu(ft.Container):
+    ...
+
+
 class BaseItem(ft.Container):
     def __init__(
         self,
         values: dict[TableColumn, str | int | float],
         display_values: list[str],
-        on_click_function: Callable[[ft.Container], None],
+        on_left_click: Callable[[ft.Container], None],
     ):
         super().__init__()
 
@@ -27,141 +31,85 @@ class BaseItem(ft.Container):
         self.padding = 10
         self.border_radius = 8
         self.ink = True
-        self.on_click = lambda e: on_click_function(self)
+        self.on_click = lambda e: on_left_click(self)
 
 
-class BaseView(ft.Column):
+
+class BaseView(ft.Container):
     def __init__(
         self,
         app: App,
-        search_bar_label: str,
-        lv_header_labels: tuple[str, ...],
-        add_fields: FieldDict,
-        add_column_layout: ft.Column,
-        update_fields: FieldDict,
-        update_column_layout: ft.Column,
-        db_table_columns: tuple[TableColumn, ...],
+        search_layout: ft.Container,
+        lv_headers: tuple[str, ...],
+        add_layout: ft.Container,
+        update_layout: ft.Container,
     ):
-        """Base view for Product and Client"""
         super().__init__()
 
         self.app = app
 
-        # --- SEARCH BAR ---
-        self.search_bar = ft.TextField(
-            label=search_bar_label,
-            icon=ft.Icons.SEARCH,
-            on_change=lambda e: self.update_list_view(),
-        )
-        self.search_bar_display = ft.Container(
-            content=self.search_bar,
-            margin=ft.margin.only(top=10),
-        )
-
-        # --- LIST VIEW ---
-        self.lv_header = ft.Row(
-            controls=[
-                ft.Text(
-                    label,
-                    size=16,
-                    expand=1,
-                    weight=ft.FontWeight.BOLD,
-                    text_align=ft.TextAlign.CENTER,
-                )
-                for label in lv_header_labels
-            ],
-        )
         self.lv = ft.ListView(
             expand=True,
             spacing=5,
         )
-        self.lv_column = ft.Column([self.lv_header, self.lv], height=300)
-        self.lv_display = ft.Container(
-            content=self.lv_column,
-            bgcolor=ft.Colors.SECONDARY_CONTAINER,
-            border_radius=12,
-            padding=10,
-        )
         self.clicked_item: BaseItem = None
+        self.lv_context_menu: BaseContextMenu = None
 
-        # --- ADD ---
-        for field in add_fields.values():
-            field.on_change = self.clear_error_field
-            field.on_submit = lambda e: self.add_action()
-        self.add_fields = add_fields
-        add_column_layout.controls.append(
-            ft.Row(
-                [
-                    self._create_main_button(
-                        "Adicionar", on_click=lambda e: self.add_action()
-                    ),
-                    self._create_rubber_button(
-                        add_fields,
-                        on_click=lambda e: self.clear_fields(self.add_fields),
-                    ),
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-            )
-        )
-        self.add_display = ft.Container(
-            content=add_column_layout,
-            margin=ft.margin.only(top=5),
-        )
-
-        # UPDATE - SECTION -
-        for field in update_fields.values():
-            field.on_change = self.clear_error_field
-            field.on_submit = lambda e: self.update_action()
-        self.update_fields = update_fields
-
-        update_column_layout.controls.append(
-            ft.Row(
-                [
-                    self._create_main_button(
-                        "Atualizar", on_click=lambda e: self.update_action()
-                    ),
-                    self._create_rubber_button(
-                        update_fields,
-                        on_click=lambda e: self.on_item_click(self.clicked_item),
-                    ),
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-            )
-        )
-        self.update_display = ft.Container(
-            content=update_column_layout,
-            margin=ft.margin.only(top=5),
-        )
-
-        self._check_field_dicts_keys(
-            (self.add_fields, self.update_fields), db_table_columns
-        )
-
-        # TABS - SECTION -
         self.tabs = ft.Tabs(
             selected_index=0,
             tabs=[
                 ft.Tab(
-                    "Adicionar",
+                    text="Adicionar",
                     icon=ft.Icons.ADD,
                     height=50,
-                    content=self.add_display,
+                    content=add_layout,
                 ),
                 ft.Tab(
                     text="Atualizar",
                     icon=ft.Icons.UPDATE,
                     height=50,
-                    content=self.update_display,
-                ),
-            ],
+                    content=update_layout,
+                )
+            ]
         )
 
-        # DISPLAY - SECTION -
-        self.controls = [self.search_bar_display, self.lv_display, self.tabs]
+        lv_header = ft.Row(
+            controls=[
+                ft.Text(
+                    value=label,
+                    size=16,
+                    expand=1,
+                    weight=ft.FontWeight.BOLD,
+                    text_align=ft.TextAlign.CENTER,
+                )
+                for label in lv_headers
+            ]
+        )
+        lv_layout = ft.Container(
+            content=ft.Column(
+                controls=[
+                    lv_header,
+                    self.lv
+                ],
+                height=300,
+            ),
+            bgcolor=ft.Colors.SECONDARY_CONTAINER,
+            border_radius=12,
+            padding=10,
+        )
+
+        
+        self.content=ft.Column(
+            controls=[
+                search_layout,
+                lv_layout,
+                self.tabs
+            ]
+        )
 
     # GENERIC METHODS
 
-    def on_item_click(self, item: BaseItem | None, update=True):
+    def on_item_left_click(self, item: BaseItem | None, update=True):
         if self.clicked_item:
             self.clicked_item.bgcolor = None
 
@@ -169,25 +117,60 @@ class BaseView(ft.Column):
 
         if self.clicked_item:
             self.clicked_item.bgcolor = ft.Colors.BLUE_GREY_400
-            self.tabs.selected_index = 1
-
-            for key, value in self.clicked_item.values.items():
-                if key in self.update_fields:
-                    self.update_fields[key].value = value
+            self._item_left_clicked(True)
         else:
-            self.clear_fields(self.update_fields, update=False)
+            self._item_left_clicked(False)
 
-        if update:
-            self.update()
+        if update: self.update()
+        
+    def db_action_error_handling(
+        self,
+        error_messages: dict,
+        target_field_dict: FieldDict,
+        snack_bar_message: str = "Sucesso"
+    ):
+        has_errors = False
+        for field_key, msg in error_messages.items():
+            target_field_dict[field_key].error_text = msg if msg else None
+            if msg:
+                has_errors = True
 
-    def clear_fields(self, target_fields: FieldDict, update=True):
-        for field in target_fields.values():
-            field.value = None
-            field.error_text = None
+        if not has_errors:
+            self.clear_fields(target_field_dict, update=False)
+            self.update_lv(update=False)
+            self.page.snack_bar.content.value = snack_bar_message
+            self.page.snack_bar.bgcolor = ft.Colors.GREEN
+            self.page.snack_bar.open = True
+            self.page.overlay.append(self.page.snack_bar)
 
-        if update:
-            self.update()
+        self.page.update()
 
+    def update_lv(self, update=True):
+
+        self.lv.controls.clear()
+        raw_base_items_list = self.get_raw_base_items_list()
+
+        for raw_base_item in raw_base_items_list:
+            self.lv.controls.append(
+                BaseItem(**raw_base_item)
+            )
+        
+        if update: self.update()
+
+    def clear_fields(self, target: FieldDict | tuple[FieldDict, ...], update=True):
+        def _clear_field_dict(fd: FieldDict):
+            for field in fd.values():
+                field.value = None
+                field.error_text = None
+
+        if isinstance(target, tuple):
+            for fd in target:
+                _clear_field_dict(fd)
+        else:
+            _clear_field_dict(target)
+
+        if update: self.update()
+        
     def clear_error_field(self, e: ft.ControlEvent):
         if e.control.error_text:
             e.control.error_text = None
@@ -195,17 +178,23 @@ class BaseView(ft.Column):
 
     # ABSTRACT METHODS
 
-    def update_list_view(self, update=True):
+    def _item_left_clicked(self, cliked: bool):
         raise NotImplementedError(
-            "child class must implement 'update_list_view' method"
+            "child class must implement '_item_left_clicked' method"
         )
 
     def add_action(self):
+        """Try to add, get the errors and call BaseView's db action error handler"""
         raise NotImplementedError("child class must implement 'add' method")
 
     def update_action(self):
+        """Try to update, get the errors and call BaseView's db action error handler"""
         raise NotImplementedError("child class must implement 'update' method")
 
+    def get_raw_base_items_list(self) -> list[Dict]:
+        """Dicts must contain the same key words as BaseItem's args"""
+        raise NotImplementedError("child class must implement 'get_raw_base_items_list' method")
+    
     # HELPERS
 
     def get_field_data(self, target_fields: FieldDict):
@@ -218,7 +207,7 @@ class BaseView(ft.Column):
             data[key] = value
 
         return data
-
+    
     @classmethod
     def create_text_field(
         cls,
@@ -228,6 +217,7 @@ class BaseView(ft.Column):
         disabled=False,
         height=40,
         icon: ft.Icons = None,
+        on_change: Callable = None
     ):
         return ft.TextField(
             label=label,
@@ -236,32 +226,41 @@ class BaseView(ft.Column):
             height=height,
             disabled=disabled,
             icon=icon,
+            on_change=on_change
         )
 
-    def _create_main_button(self, text: str, on_click=None):
+    @staticmethod
+    def _create_main_button(
+        text: str,
+        icon: ft.Icons,
+        on_click=None
+    ):
         return ft.ElevatedButton(
             text,
             width=300,
-            icon=ft.Icons.ADD,
+            icon=icon,
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.BLUE,
             on_click=on_click,
         )
 
-    def _create_rubber_button(self, target_fields: FieldDict, on_click=None):
+    @staticmethod
+    def _create_rubber_button(on_click=None):
         return ft.IconButton(
             icon=ft.Icons.CLEAR,
             tooltip="Desfazer",
             on_click=on_click,
         )
-
-    # CHECKERS
-
-    @classmethod
-    def _check_field_dicts_keys(
-        cls, field_dicts: tuple[FieldDict, FieldDict], table_columns: list[TableColumn]
-    ):
-        for fd in field_dicts:
-            for key in fd.keys():
-                if key not in table_columns:
-                    raise KeyError(f"Key '{key}' not in {table_columns}")
+    
+    @staticmethod
+    def _create_column_layout(*rows: ft.Row):
+        return ft.Column(
+            controls=rows,
+        )
+    
+    @staticmethod
+    def _create_container_display(content):
+        return ft.Container(
+            content=content,
+            margin=ft.margin.only(top=5),
+        )

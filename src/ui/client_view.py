@@ -1,6 +1,6 @@
 import flet as ft
 from application.app import App
-from ui.base_view import BaseItem, BaseView
+from ui.base_view import BaseItem, BaseView, FieldDict
 from data.table_classes import ClientColumns
 from typing import get_args
 
@@ -8,101 +8,130 @@ from typing import get_args
 class ClientView(BaseView):
     def __init__(self, app: App):
 
-        add_fields = {
-            "nome": BaseView.create_text_field("nome"),
-            "contato": BaseView.create_text_field("contato"),
-        }
-        add_fields_layout = ft.Column(
-            controls=[ft.Row(controls=[add_fields["nome"], add_fields["contato"]])]
+        self.search_bar = self.create_text_field(
+            label="Buscar clientes",
+            icon=ft.Icons.SEARCH,
+            on_change=lambda e: self.update_lv()
         )
 
-        update_fields = {
-            "id_cliente": BaseView.create_text_field(
-                hint_text="id", disabled=True, expand=1
-            ),
-            "nome": BaseView.create_text_field("nome", expand=10),
-            "contato": BaseView.create_text_field("contato", expand=10),
-        }
-        update_fields_layout = ft.Column(
-            controls=[
-                ft.Row(
-                    controls=[
-                        update_fields["id_cliente"],
-                        update_fields["nome"],
-                        update_fields["contato"],
-                    ]
-                )
-            ]
-        )
+        self.add_fields = self._build_add_fields()
+        self.update_fields = self._build_update_fields()
+
+        search_layout = self._create_container_display(self.search_bar)
+        add_layout = self._build_add_tab_layout()       
+        update_layout = self._build_update_tab_layout()
+
+        lv_headers = get_args(ClientColumns)[:-1]
 
         super().__init__(
             app,
-            search_bar_label="Buscar cliente",
-            lv_header_labels=("id", "nome", "contato"),
-            add_fields=add_fields,
-            add_column_layout=add_fields_layout,
-            update_fields=update_fields,
-            update_column_layout=update_fields_layout,
-            db_table_columns=get_args(ClientColumns),
+            search_layout=search_layout,
+            lv_headers=lv_headers,
+            add_layout=add_layout,
+            update_layout=update_layout
         )
 
-    def update_list_view(self, update=True):
+    def get_raw_base_items_list(self):
+        raw_base_items_list = []
         rows = self.app.search_client(self.search_bar.value)
 
-        self.lv.controls.clear()
-
         for row in rows:
-            values = self.app.get_client_info(row)
-            display_values = [
-                values["id_cliente"],
-                values["nome"],
-                values["contato"],
-            ]
-            self.lv.controls.append(
-                BaseItem(values, display_values, self.on_item_click)
+            info = self.app.get_client_info(row)
+            raw_base_items_list.append(
+                {
+                    "values":info,
+                    "display_values":[
+                        info["id_cliente"],
+                        info["nome"],
+                        info["contato"],
+                    ],
+                    "on_left_click": self.on_item_left_click
+                }
             )
-
-        if self.clicked_item:
-            self.on_item_click(self.clicked_item, update=False)
-        if update:
-            self.update()
-
+        
+        return raw_base_items_list
+    
     def add_action(self):
-        error_messages = self.app.try_add_client(**self.get_field_data(self.add_fields))
-
-        has_errors = False
-        for field_key, msg in error_messages.items():
-            self.add_fields[field_key].error_text = msg if msg else None
-            if msg:
-                has_errors = True
-
-        if not has_errors:
-            self.clear_fields(self.add_fields, update=False)
-            self.update_list_view(update=False)
-            self.page.snack_bar.content.value = "Cliente salvo com sucesso!"
-            self.page.snack_bar.bgcolor = ft.Colors.GREEN
-            self.page.snack_bar.open = True
-            self.page.overlay.append(self.page.snack_bar)
-
-        self.page.update()
+        error_messages = self.app.try_add_client(
+            **self.get_field_data(self.add_fields)
+        )
+        self.db_action_error_handling(
+            error_messages, self.add_fields, "Cliente salvo com sucesso"
+        )
 
     def update_action(self):
         error_messages = self.app.try_update_client(
             **self.get_field_data(self.update_fields)
         )
+        self.db_action_error_handling(
+            error_messages, self.update_fields, "Cliente alterado com sucesso"
+        )
 
-        has_errors = False
-        for field_key, msg in error_messages.items():
-            self.update_fields[field_key].error_text = msg if msg else None
-            if msg:
-                has_errors = True
+    def _item_left_clicked(self, cliked):
+        if cliked:
+            self.tabs.selected_index=1
+            for key, value in self.clicked_item.values.items():
+                if key in self.update_fields:
+                    self.update_fields[key].value = value
+        else:
+            self.clear_fields(self.update_fields, update=False)
 
-        if not has_errors:
-            self.on_item_click(self.clicked_item, update=False)
-            self.update_list_view(update=False)
-            self.page.snack_bar.content.value = "Cliente alterado com sucesso!"
-            self.page.snack_bar.bgcolor = ft.Colors.GREEN
-            self.page.snack_bar.open = True
-            self.page.overlay.append(self.page.snack_bar)
+    # BUILDERS
 
-        self.page.update()
+    def _build_add_fields(self) -> FieldDict:
+        fields = {
+            "nome": self.create_text_field(label="nome"),
+            "contato": self.create_text_field(label="contato")
+        }
+        # Configura eventos em lote
+        for field in fields.values():
+            field.on_change = self.clear_error_field
+            field.on_submit = lambda e: self.add_action() 
+        return fields
+    
+    def _build_update_fields(self):
+        fields = {
+            "id_cliente": self.create_text_field(hint_text="id", disabled=True, expand=1),
+            "nome": self.create_text_field(label="nome", expand=10),
+            "contato": self.create_text_field(label="contato", expand=10)
+        }
+        for field in fields.values():
+            field.on_change = self.clear_error_field
+            field.on_submit = lambda e: self.update_action()
+        return fields
+    
+    def _build_add_tab_layout(self):
+        return self._create_container_display(
+            self._create_column_layout(
+                ft.Row(controls=list(self.add_fields.values())),
+                ft.Row(
+                    controls=[
+                        self._create_main_button(
+                            "Adicionar", ft.Icons.ADD, lambda e: self.add_action()
+                        ),
+                        self._create_rubber_button(
+                            lambda e: self.clear_fields(self.add_fields)
+                        )
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                )
+            )
+        )
+
+    def _build_update_tab_layout(self):
+        return self._create_container_display(
+            self._create_column_layout(
+                ft.Row(controls=list(self.update_fields.values())),
+                ft.Row(
+                    controls=[
+                        self._create_main_button(
+                            "Atualizar", ft.Icons.UPDATE, lambda e: self.update_action()
+                        ),
+                        self._create_rubber_button(
+                            lambda e: self.clear_fields(self.update_fields)
+                        )
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                )
+            )
+        )
