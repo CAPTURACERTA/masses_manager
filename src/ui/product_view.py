@@ -51,7 +51,10 @@ class ProductView(BaseView):
                         info["estoque_min"],
                         info["estoque_atual"],
                     ],
-                    "on_left_click": self.on_item_left_click
+                    "on_left_click": self.on_item_left_click,
+                    "context_menu_options": {
+                        "option1": lambda e: print("oi")
+                    }
                 }
             )
         
@@ -98,7 +101,7 @@ class ProductView(BaseView):
             field.on_submit = lambda e: self.add_action() 
         return fields
     
-    def _build_update_fields(self):
+    def _build_update_fields(self) -> FieldDict:
         fields = {
             "id_produto": BaseView.create_text_field(
                 hint_text="id", disabled=True, expand=1
@@ -170,7 +173,7 @@ class ProductView(BaseView):
                             "Atualizar", ft.Icons.UPDATE, lambda e: self.update_action()
                         ),
                         self._create_rubber_button(
-                            lambda e: self.clear_fields(self.update_fields)
+                            lambda e: self.on_item_left_click(self.clicked_item)
                         )
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,

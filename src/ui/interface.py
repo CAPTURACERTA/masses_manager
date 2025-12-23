@@ -4,20 +4,31 @@ from ui.product_view import ProductView
 from ui.client_view import ClientView
 
 
-class UI(ft.Column):
+class UI(ft.Container):
     def __init__(self, app: App):
         super().__init__()
-        self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
         self.app = app
         self.expand = True
+        self.width=1000
 
         # VIEWS
         self.product_view = ProductView(self.app)
         self.client_view = ClientView(self.app)
 
         # TABS
-        self.tabs = ft.Tabs(
+        self.tabs = self._build_tabs()
+
+        self.content=self.tabs
+        
+    def start(self,):
+        self.product_view.update_lv()
+        self.client_view.update_lv()
+
+    # BUILDERS
+
+    def _build_tabs(self):
+        return ft.Tabs(
             selected_index=0,
             animation_duration=300,
             tabs=[
@@ -33,17 +44,3 @@ class UI(ft.Column):
                 )
             ]
         )
-
-        # FINAL LAYOUT
-        self.controls = [
-            ft.Container(
-                content=self.tabs,
-                width=1000,
-                expand=True
-            )
-        ]
-
-
-    def start(self,):
-        self.product_view.update_lv()
-        self.client_view.update_lv()

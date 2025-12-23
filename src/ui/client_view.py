@@ -89,7 +89,7 @@ class ClientView(BaseView):
             field.on_submit = lambda e: self.add_action() 
         return fields
     
-    def _build_update_fields(self):
+    def _build_update_fields(self) -> FieldDict:
         fields = {
             "id_cliente": self.create_text_field(hint_text="id", disabled=True, expand=1),
             "nome": self.create_text_field(label="nome", expand=10),
@@ -128,7 +128,7 @@ class ClientView(BaseView):
                             "Atualizar", ft.Icons.UPDATE, lambda e: self.update_action()
                         ),
                         self._create_rubber_button(
-                            lambda e: self.clear_fields(self.update_fields)
+                            lambda e: self.on_item_left_click(self.clicked_item)
                         )
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,

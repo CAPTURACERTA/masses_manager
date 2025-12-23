@@ -8,31 +8,108 @@ FieldDict: TypeAlias = Dict[TableColumn, ft.TextField]
 
 
 class BaseContextMenu(ft.Container):
-    ...
+    def __init__(
+        self,
+        options: dict[str, Callable[[any], any]]
+    ):
+        super().__init__()
+
+        self.visible=False
+
+        self.menu = self._build_menu(options)
+
+        self.content=ft.Stack(
+            controls=[
+                ft.GestureDetector(
+                    expand=True,
+                    on_tap_down=lambda e: self.disappear(),
+                    on_secondary_tap_down=lambda e: self.disappear(),
+                ),
+                self.menu
+            ]
+        )
+
+    def appear(self, top: float, left: float):
+        self.menu.top=top
+        self.menu.left=left
+        self.visible=True
+
+        if self not in self.page.overlay:
+            self.page.overlay.append(self)
+        
+        self.page.update()
+
+    def disappear(self):
+        self.visible=False
+        self.page.overlay.remove(self)
+        self.page.update()
+
+    # BUILDERS
+
+    def _build_menu(self, options: dict[str, Callable[[any], any]]):
+        return ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Container(
+                        content=ft.Text(label),
+                        expand=True,
+                        ink=True,
+                        on_click=func,
+                        border_radius=10
+                    ) for label, func in options.items()
+                ]
+            ),
+            padding=10,
+            border_radius=10,
+            bgcolor=ft.Colors.GREY_300,
+        )
 
 
-class BaseItem(ft.Container):
+class BaseItem(ft.GestureDetector):
     def __init__(
         self,
         values: dict[TableColumn, str | int | float],
         display_values: list[str],
         on_left_click: Callable[[ft.Container], None],
+        context_menu_options: dict[str, Callable[[any], any]] = None,
     ):
         super().__init__()
 
         self.values = values
+        self.container = self._build_container(display_values, on_left_click)
+        self.context_menu = self.get_context_menu(context_menu_options)
 
-        self.content = ft.Row(
-            [
-                ft.Text(value, size=16, expand=1, text_align=ft.TextAlign.CENTER)
-                for value in display_values
-            ]
+        self.content = self.container
+        self.on_secondary_tap_down = self.open_context_menu
+
+    def open_context_menu(self, e:ft.TapEvent):
+        if self.context_menu:
+            self.context_menu.page = self.page
+            self.context_menu.appear(e.global_y, e.global_x)
+
+    # BUILDERS
+
+    def _build_container(
+        self,
+        display_values: list[str],
+        on_left_click: Callable[[ft.Container], None],
+    ):
+        return ft.Container(
+            content=ft.Row(
+                [
+                    ft.Text(value, size=16, expand=1, text_align=ft.TextAlign.CENTER)
+                    for value in display_values
+                ]
+            ),
+            padding = 10,
+            border_radius = 8,
+            ink = True,
+            on_click = lambda e: on_left_click(self),
         )
-        self.padding = 10
-        self.border_radius = 8
-        self.ink = True
-        self.on_click = lambda e: on_left_click(self)
 
+    def get_context_menu(self, options: dict[str, Callable[[any], any]] | None):
+        if not options: return None
+        return BaseContextMenu(options)
 
 
 class BaseView(ft.Container):
@@ -111,12 +188,12 @@ class BaseView(ft.Container):
 
     def on_item_left_click(self, item: BaseItem | None, update=True):
         if self.clicked_item:
-            self.clicked_item.bgcolor = None
+            self.clicked_item.container.bgcolor = None
 
         self.clicked_item = item if self.clicked_item != item else None
 
         if self.clicked_item:
-            self.clicked_item.bgcolor = ft.Colors.BLUE_GREY_400
+            self.clicked_item.container.bgcolor = ft.Colors.BLUE_GREY_400
             self._item_left_clicked(True)
         else:
             self._item_left_clicked(False)
