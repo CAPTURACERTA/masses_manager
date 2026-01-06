@@ -2,6 +2,7 @@ import flet as ft
 from application.app import App
 from ui.product_view import ProductView
 from ui.client_view import ClientView
+from ui.transaction_view import TransactionView
 
 
 class UI(ft.Container):
@@ -15,6 +16,7 @@ class UI(ft.Container):
         # VIEWS
         self.product_view = ProductView(self.app)
         self.client_view = ClientView(self.app)
+        self.transaction_view = TransactionView(self.app)
 
         # TABS
         self.tabs = self._build_tabs()
@@ -41,6 +43,11 @@ class UI(ft.Container):
                     text="Clientes",
                     icon=ft.Icons.PEOPLE,
                     content=self.client_view
+                ),
+                ft.Tab(
+                    text="Transações",
+                    icon=ft.Icons.RECEIPT,
+                    content=self.transaction_view
                 )
             ]
         )

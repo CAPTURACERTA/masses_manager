@@ -2,7 +2,7 @@ import flet as ft
 from application.app import App
 from data.table_classes import TableColumn
 from typing import TypeAlias, Dict, Callable
-
+from datetime import date
 
 FieldDict: TypeAlias = Dict[TableColumn, ft.TextField]
 
@@ -234,17 +234,25 @@ class BaseView(ft.Container):
         
         if update: self.update()
 
-    def clear_fields(self, target: FieldDict | tuple[FieldDict, ...], update=True):
+    def clear_fields(
+        self,
+        target: FieldDict | tuple[FieldDict, ...] | ft.TextField | any,
+        update=True
+    ):
         def _clear_field_dict(fd: FieldDict):
             for field in fd.values():
-                field.value = None
-                field.error_text = None
+                if isinstance(field, ft.TextField):
+                    field.value = None
+                    field.error_text = None
 
         if isinstance(target, tuple):
             for fd in target:
                 _clear_field_dict(fd)
-        else:
+        elif isinstance(target, Dict):
             _clear_field_dict(target)
+        elif isinstance(target, ft.TextField):
+            target.value = None
+            target.error_text = None
 
         if update: self.update()
         
@@ -294,7 +302,8 @@ class BaseView(ft.Container):
         disabled=False,
         height=40,
         icon: ft.Icons = None,
-        on_change: Callable = None
+        on_change: Callable = None,
+        on_focus: Callable = None,
     ):
         return ft.TextField(
             label=label,
@@ -303,7 +312,8 @@ class BaseView(ft.Container):
             height=height,
             disabled=disabled,
             icon=icon,
-            on_change=on_change
+            on_change=on_change,
+            on_focus=on_focus,
         )
 
     @staticmethod
@@ -322,10 +332,11 @@ class BaseView(ft.Container):
         )
 
     @staticmethod
-    def _create_rubber_button(on_click=None):
+    def _create_rubber_button(icon_color=None, tooltip="desfazer", on_click=None):
         return ft.IconButton(
             icon=ft.Icons.CLEAR,
-            tooltip="Desfazer",
+            icon_color=icon_color,
+            tooltip=tooltip,
             on_click=on_click,
         )
     
@@ -340,4 +351,182 @@ class BaseView(ft.Container):
         return ft.Container(
             content=content,
             margin=ft.margin.only(top=5),
+        )
+    
+
+class Calendar(ft.ElevatedButton):
+    def __init__(self, help_text:str):
+        super().__init__()
+
+        self.calendar = self._build_date_picker(help_text)
+        self.on_click = lambda e: self.page.open(self.calendar)
+
+        self.date = None
+        self.icon = ft.Icons.CALENDAR_MONTH
+        self._on_change(False)
+
+    def _on_change(self, update=True):
+        self.text = self.calendar.value.strftime("%d/%m/%y")
+        self.date = self.calendar.value.strftime("%Y-%m-%d")
+        if update: self.update()
+
+
+    # BUILDER
+
+    def _build_date_picker(self, help_text: str):
+        dt = date.today()
+        return ft.DatePicker(
+            last_date=dt,
+            value=dt,
+            help_text=help_text,
+            on_change=lambda e: self._on_change()
+        )
+    
+
+class ItemPicker(ft.Container):
+    def __init__(self, app: App, table: str):
+        super().__init__()
+
+        self.app = app
+        self.table = table
+        self.target_text_field: ft.TextField = None
+
+        self.expand=True
+        self.visible=False
+
+        self.search_bar = BaseView.create_text_field(
+            label=f"Buscar {table}",
+            icon=ft.Icons.SEARCH,
+            on_change=lambda e: self.update_lv(),
+            expand=False
+        )
+
+        self.lv = ft.ListView(
+            expand=True,
+            spacing=5,
+        )
+        self.clicked_item: BaseItem = None
+        
+        self.chosen_item_text = ft.Text(
+            value="Nenhum selecionado", 
+            weight=ft.FontWeight.BOLD,
+            color=ft.Colors.GREY
+        )
+
+        self.content=ft.Stack(
+            controls=[
+                self._build_bg(),
+                self._build_main_content()
+            ],
+            alignment=ft.alignment.center,
+        )
+
+
+    def appear(self, target_text_field: ft.TextField):
+        self.target_text_field = target_text_field
+
+        self.visible = True
+        if self not in self.page.overlay:
+            self.page.overlay.append(self)
+
+        self.update_lv(False)
+        self.page.update()
+        self.search_bar.focus()
+
+    def disappear(self):
+        self.on_left_click(self.clicked_item)
+        self.visible = False
+        self.page.overlay.remove(self)
+        self.page.update()
+
+    def chose_item(self):
+        if self.clicked_item:
+            self.target_text_field.value = self.clicked_item.values["nome"]
+        self.disappear()
+
+    def cancel(self):
+        self.target_text_field.value = None
+        self.disappear()
+
+    def update_lv(self, update=True):
+        if self.table == "cliente":
+            items = self.app.search_client(self.search_bar.value)
+        else:
+            items = self.app.search_product(self.search_bar.value)
+
+        self.lv.controls.clear()
+
+        for item in items:
+            name = self.app.get_client_info(item, "nome")
+            self.lv.controls.append(
+                BaseItem(
+                    {"nome": name}, [name,], self.on_left_click
+                )
+            )
+
+        if update: self.update()
+
+    def on_left_click(self, item: BaseItem | None):
+        if self.clicked_item:
+            self.clicked_item.container.bgcolor = None
+
+        self.clicked_item = item if self.clicked_item != item else None
+
+        if self.clicked_item:
+            self.chosen_item_text.value = self.clicked_item.values["nome"]
+            self.clicked_item.container.bgcolor = ft.Colors.BLUE_GREY_400
+        else:
+            self.chosen_item_text.value = "Nenhum selecionado"
+
+        self.update()
+
+    # BUILDERS
+
+    def _build_bg(self):
+        return ft.GestureDetector(
+            on_tap=lambda _: self.disappear(),
+            content=ft.Container(
+                expand=True,
+                bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLACK),
+            )
+        )
+
+    def _build_main_content(self):
+        return ft.Container(
+            content=ft.Column(
+                controls=[
+                    self.search_bar,
+
+                    ft.Container(
+                        content=self.lv,
+                        height=200,
+                        border_radius=12,
+                        bgcolor=ft.Colors.SECONDARY_CONTAINER,
+                    ),
+
+                    ft.Row(
+                        controls=[
+                            self.chosen_item_text,
+                            ft.IconButton(
+                                icon=ft.Icons.CHECK,
+                                tooltip="confirmar",
+                                on_click=lambda _: self.chose_item()
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.CANCEL,
+                                icon_color=ft.Colors.RED,
+                                tooltip="cancelar",
+                                on_click=lambda _: self.cancel()   
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER
+                    ),
+                ],
+                tight=True
+            ),
+            bgcolor=ft.Colors.WHITE,
+            width=400,          
+            padding=20,
+            border_radius=20,
+            shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.BLACK54), 
         )

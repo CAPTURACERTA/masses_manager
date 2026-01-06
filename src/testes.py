@@ -2,7 +2,6 @@ from data.database import MassesDatabase
 from data.db_manager import DbManager
 from ui.interface import UI
 from application.app import App
-import random
 import flet as ft
 
 

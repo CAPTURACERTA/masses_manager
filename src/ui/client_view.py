@@ -1,6 +1,6 @@
 import flet as ft
 from application.app import App
-from ui.base_view import BaseItem, BaseView, FieldDict
+from ui.base_view import BaseView, FieldDict
 from data.table_classes import ClientColumns
 from typing import get_args
 
@@ -110,7 +110,7 @@ class ClientView(BaseView):
                             "Adicionar", ft.Icons.ADD, lambda e: self.add_action()
                         ),
                         self._create_rubber_button(
-                            lambda e: self.clear_fields(self.add_fields)
+                            on_click=lambda e: self.clear_fields(self.add_fields)
                         )
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -128,7 +128,7 @@ class ClientView(BaseView):
                             "Atualizar", ft.Icons.UPDATE, lambda e: self.update_action()
                         ),
                         self._create_rubber_button(
-                            lambda e: self.on_item_left_click(self.clicked_item)
+                            on_click=lambda e: self.on_item_left_click(self.clicked_item)
                         )
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,

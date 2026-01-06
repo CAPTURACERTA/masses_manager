@@ -19,6 +19,10 @@ ProductColumns: TypeAlias = Literal[
 ClientColumns: TypeAlias = Literal[
     "id_cliente", "nome", "contato", "ativo",
 ]
+TransactionColumns: TypeAlias = Literal[
+    "id_transacao", "id_cliente", "data", "tipo",
+    "estado", "valor_aberto", "criado_em", "atualizado_em"
+]
 
 class ProductInfo(TypedDict):
     id_produto: int

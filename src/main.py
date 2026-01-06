@@ -1,6 +1,10 @@
-def func(a: int, b: int, c: str):
-    print(a,b,c)
+from ui.base_view import ClientPicker
+import flet as ft
 
-func(*[1,2,"s"])
+def main(page: ft.Page):
+
+    page.add()
+
+ft.app(target=main)
 
 

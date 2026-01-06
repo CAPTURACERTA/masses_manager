@@ -1,5 +1,5 @@
 import sqlite3
-from data.table_classes import DataBaseTables, ProductInfo, ClientInfo, ProductColumns, ClientColumns
+from data.table_classes import DataBaseTables, ProductColumns, ClientColumns
 from typing import Literal, get_args
 from os import path as Path
 
