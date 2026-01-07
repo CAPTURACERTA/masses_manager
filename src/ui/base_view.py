@@ -51,17 +51,17 @@ class BaseContextMenu(ft.Container):
             content=ft.Column(
                 controls=[
                     ft.Container(
-                        content=ft.Text(label),
+                        content=ft.Text(label, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
                         expand=True,
                         ink=True,
                         on_click=func,
-                        border_radius=10
+                        border_radius=10,
                     ) for label, func in options.items()
                 ]
             ),
             padding=10,
             border_radius=10,
-            bgcolor=ft.Colors.GREY_300,
+            bgcolor=ft.Colors.ON_PRIMARY_CONTAINER,
         )
 
 

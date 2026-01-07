@@ -53,7 +53,9 @@ class ProductView(BaseView):
                     ],
                     "on_left_click": self.on_item_left_click,
                     "context_menu_options": {
-                        "option1": lambda e: print("oi")
+                        "option 1": lambda e: print("oi"),
+                        "option 2": lambda e: print("oi"),
+                        "option 3": lambda e: print("oi"),
                     }
                 }
             )

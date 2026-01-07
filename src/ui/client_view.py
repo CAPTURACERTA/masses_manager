@@ -45,7 +45,12 @@ class ClientView(BaseView):
                         info["nome"],
                         info["contato"],
                     ],
-                    "on_left_click": self.on_item_left_click
+                    "on_left_click": self.on_item_left_click,
+                    "context_menu_options": {
+                        "option 1": lambda e: print("oi"),
+                        "option 2": lambda e: print("oi"),
+                        "option 3": lambda e: print("oi"),
+                    }
                 }
             )
         
